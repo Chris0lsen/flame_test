@@ -1,21 +1,14 @@
 # FlameTest
 
-**TODO: Add description**
+I've been using this project to test FLAME on minikube, to vet the k8s capabilities before trying anything in production. Here's my general workflow:
 
-## Installation
-
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `flame_test` to your list of dependencies in `mix.exs`:
-
-```elixir
-def deps do
-  [
-    {:flame_test, "~> 0.1.0"}
-  ]
-end
-```
-
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at <https://hexdocs.pm/flame_test>.
-
+ - First, clone this repo and install [minikube](https://minikube.sigs.k8s.io/docs/start/?arch=%2Fmacos%2Farm64%2Fstable%2Fbinary+download)
+ - `minikube start` to fire up the cluster
+ - `eval $(minikube docker-env)` to use minikube's docker repo
+ - `cd` into flame_test, if you're not already there
+ - `docker build -t flame_test:latest .` to build the image
+ - `kubectl apply -f deployment.yaml` to start up the k8s resources
+ - Get a shell into one of the pods in the cluster (I included a deployment of testing pods in `deployment.yaml`), e.g. `kubectl exec -n flame-namespace --stdin --tty iex-debug-deployment-7bfbfbc76f-5jkpm -- /bin/bash`
+ - POST a request to one of the `flame-test` pods, e.g. `curl -X POST http://10.244.0.81:4000/call -d '{"data": 42}' -H "Content-Type: application/json"`
+ - ???
+ - Oh no! The runner pod is started succesfully, but the `place_child` call (or whatever prompts the remote job to run) never happens, and the new pod just times out :(
