@@ -1,0 +1,158 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: flame-namespace
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: flame-test-deployment
+    namespace: flame-namespace
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: flame-test
+  template:
+    metadata:
+      labels:
+        app: flame-test
+    spec:
+      serviceAccountName: flame-test
+      containers:
+      - name: flame-test
+        image: flame_test:latest
+        ports:
+        - containerPort: 4099
+        - containerPort: 4369
+        - containerPort: 9100
+        - containerPort: 9101
+        - containerPort: 9102
+        - containerPort: 9103
+        - containerPort: 9104
+        - containerPort: 9105
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace 
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.podIP
+        - name: RELEASE_DISTRIBUTION
+          value: name
+        - name: RELEASE_NODE
+          value: flame_test@${HOSTNAME}.flame-test.flame-namespace.svc.cluster.local
+        - name: RELEASE_COOKIE
+          value: "secret"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flame-test-service
+spec:
+  selector:
+    app: flame-test
+  ports:
+    - protocol: TCP
+      port: 4369
+      targetPort: 4369
+      name: epmd
+    - protocol: TCP
+      port: 9100
+      targetPort: 9100
+      name: erlang-port-1
+    - protocol: TCP
+      port: 9101
+      targetPort: 9101
+      name: erlang-port-2
+    - protocol: TCP
+      port: 9102
+      targetPort: 9102
+      name: erlang-port-3
+    - protocol: TCP
+      port: 9103
+      targetPort: 9103
+      name: erlang-port-4
+    - protocol: TCP
+      port: 9104
+      targetPort: 9104
+      name: erlang-port-5
+    - protocol: TCP
+      port: 9105
+      targetPort: 9105
+      name: erlang-port-6
+    - protocol: TCP
+      port: 80
+      targetPort: 4099
+      name: app
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iex-debug-deployment
+  namespace: flame-namespace
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: iex-debug
+  template:
+    metadata:
+      labels:
+        app: iex-debug
+    spec:
+      containers:
+      - name: iex-debug
+        image: elixir:latest
+        command: ["/bin/sh", "-c", "while true; do sleep 30; done;"]
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 4099
+        - containerPort: 4369
+        - containerPort: 9100
+        - containerPort: 9101
+        - containerPort: 9102
+        - containerPort: 9103
+        - containerPort: 9104
+        - containerPort: 9105
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: flame-test
+  namespace: flame-namespace
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: flame-namespace
+  name: pod-mgr
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["create", "get", "list", "delete", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: flame-test-pod-mgr
+  namespace: flame-namespace
+subjects:
+  - kind: ServiceAccount
+    name: flame-test
+    namespace: flame-namespace
+roleRef:
+  kind: Role
+  name: pod-mgr
+  apiGroup: rbac.authorization.k8s.io
