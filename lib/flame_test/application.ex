@@ -3,11 +3,18 @@ defmodule FlameTest.Application do
   import YamlElixir.Sigil
 
   def start(_type, _args) do
+    flame_parent = FLAME.Parent.get()
+
     pod_template = ~y"""
     spec:
       serviceAccountName: flame-test
       containers:
-      - imagePullPolicy: Never    
+      - imagePullPolicy: Never
+        env:
+          - name: RELEASE_DISTRIBUTION
+            value: name
+          - name: RELEASE_NODE
+            value: flame_test@$(POD_IP)
     """
     children = [
       {FLAME.Pool,
@@ -19,12 +26,13 @@ defmodule FlameTest.Application do
         idle_shutdown_after: 30_000,
         log: :debug
         },
-      {Bandit, plug: FlameTest.Router, port: 4000}
+
+        !flame_parent && {Bandit, plug: FlameTest.Router, port: 4000}
 
     ]
+    |> Enum.filter(& &1)
 
     opts = [strategy: :one_for_one, name: FlameTest.ApplicationSupervisor]
     Supervisor.start_link(children, opts)
   end
 end
-
