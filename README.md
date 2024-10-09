@@ -10,5 +10,4 @@ I've been using this project to test FLAME on minikube, to vet the k8s capabilit
  - `kubectl apply -f deployment.yaml` to start up the k8s resources
  - Get a shell into one of the pods in the cluster (I included a deployment of testing pods in `deployment.yaml`), e.g. `kubectl exec -n flame-namespace --stdin --tty iex-debug-deployment-7bfbfbc76f-5jkpm -- /bin/bash`
  - POST a request to one of the `flame-test` pods, e.g. `curl -X POST http://10.244.0.81:4000/call -d '{"data": 42}' -H "Content-Type: application/json"`
- - ???
- - Oh no! The runner pod is started succesfully, but the `place_child` call (or whatever prompts the remote job to run) never happens, and the new pod just times out :(
+ - You'll get a response of `{message: ${data * 2}}` in your console! If you check the logs of whichever pod you sent the request to, you'll see a log line that tells you the node that actually processed your request! e.g. `Processed task on node :"flame_test@10.244.0.98"`    
